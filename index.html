@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <meta name="theme-color" content="#3EAA42">
+  <meta name="application-name" content="Le Mot">
+  <meta name="description" content="Wordle, mais en français. Devinez le mot du jour !">
+  <title>Le Mot - Wordle en français</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { height: 100%; }
+
+    body {
+      font-family: 'Outfit', Avenir, Helvetica, Arial, sans-serif;
+      background: #0e0e0f;
+      color: #fff;
+      height: 100%;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #game {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0e0e0f;
+      overflow: hidden;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      width: 100%;
+      height: 60px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      background: #1d1d20;
+    }
+
+    .header-container {
+      max-width: 500px;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      padding: 0 12px;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      width: 70px;
+      justify-content: space-between;
+      z-index: 2;
+    }
+
+    .header-right { flex-direction: row-reverse; }
+
+    .game-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .title { display: flex; align-items: center; justify-content: center; }
+
+    .title .letter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      margin: 0 3px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 4px;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .title .letter.correct { background-color: #3eaa42; }
+    .title .letter.partial { background-color: #cd8729; }
+    .title .letter.incorrect { width: 14px; }
+    .title .space { width: 14px; }
+
+    .icon-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background-color: #3a3a3c;
+      border-radius: 5px;
+      border-bottom: 2px solid #2b2b2b;
+      cursor: pointer;
+      transition: all .3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .icon-btn:hover { background-color: #474748; border-color: #313131; }
+    .icon-btn:active { background-color: #2b2b2b; border-color: #2b2b2b; }
+
+    .icon {
+      height: 13px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ===== MAIN ===== */
+    main {
+      max-width: 500px;
+      width: 100%;
+      height: 95%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    .error {
+      top: 20px;
+      margin-top: 6px;
+      position: absolute;
+      background: #ebebeb;
+      color: #121213;
+      padding: .5em 1em;
+      border-radius: .5em;
+      font-size: 18px;
+      font-weight: 700;
+      z-index: 10;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+
+    .error.show { opacity: 1; }
+
+    .grid {
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+
+    .attempt {
+      display: flex;
+      animation-duration: .3s;
+      perspective: 800px;
+    }
+
+    /* ===== TILES ===== */
+    .tile {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 62px;
+      height: 62px;
+      border: 3px solid #2f2f2f;
+      border-radius: 6px;
+      margin: 4px;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform .1s, background .1s, border .1s;
+    }
+
+    .tile .letter {
+      width: 100%;
+      height: 100%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bolder;
+      font-size: 32px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .tile.has-letter { border-color: #646464; }
+    .tile.pop { animation: pop .12s ease; }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .tile.correct { border-color: #3eaa42; background: #3eaa42; }
+    .tile.partial { border-color: #cd8729; background: #cd8729; }
+    .tile.incorrect { border-color: #3a3a3c; background: #3a3a3c; }
+
+    .tile.validated {
+      animation: flip .5s ease-in-out;
+      animation-fill-mode: forwards;
+    }
+
+    .tile.validated .letter { transition: all .1s; transform: rotateX(180deg); }
+
+    @keyframes flip {
+      0% { transform: rotateX(0deg); }
+      100% { transform: rotateX(180deg); }
+    }
+
+    .attempt.shake { animation-name: shake; }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-10px); }
+      80% { transform: translateX(10px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* ===== KEYBOARD ===== */
+    .keyboard { margin-bottom: 20px; text-align: center; }
+
+    .keyboard-line { margin-top: 10px; }
+    .keyboard-line:first-child { margin: 0; }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 43px;
+      height: 60px;
+      cursor: pointer;
+      margin: 2px;
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      background: #636363;
+      border-radius: 6px;
+      border: none;
+      border-bottom: 2px solid #4d4d4d;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .key:hover { background: #5a5a5a; }
+    .key:active { background: #4d4d4d; transform: translateY(1px); }
+
+    .key.big { width: 90px; }
+    .key .icon { height: 15px; transform: translateY(1px); }
+
+    .key.correct { background: #3eaa42; border-color: #157d19; }
+    .key.correct:active { background: #157d19; }
+    .key.partial { background: #cd8729; border-color: #9f6414; }
+    .key.partial:active { background: #9f6414; }
+    .key.incorrect { background: #2c2c2c; border-color: #212121; color: #969696; }
+    .key.incorrect:active { background: #212121; }
+
+    /* ===== ENDGAME MODAL ===== */
+    .endgame-modal {
+      position: fixed;
+      display: none;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, .7);
+      top: 0;
+      left: 0;
+      z-index: 10;
+    }
+
+    .endgame-modal.show { display: flex; }
+
+    .endgame-modal-content {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      flex-direction: column;
+      max-width: 450px;
+      width: 90%;
+      max-height: 90%;
+      padding: 24px;
+      background: #1d1d20;
+      border-radius: 8px;
+      text-align: center;
+      align-items: center;
+      animation: zoom .4s ease;
+    }
+
+    @keyframes zoom {
+      0% { transform: scale(.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .endgame-modal-content h2 {
+      font-size: 28px;
+      color: #3eaa42;
+      margin-bottom: 14px;
+      width: 100%;
+    }
+
+    .endgame-modal-content p {
+      font-size: 20px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+
+    .endgame-modal-content .soluce {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .endgame-modal-content .soluce .tile {
+      width: 40px;
+      height: 40px;
+      font-size: 22px;
+      margin: 2px;
+      border-radius: 4px;
+    }
+
+    .endgame-modal-content .soluce .tile .letter { font-size: 22px; }
+
+    .endgame-modal-content .close-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background-color: #3a3a3c;
+      border-radius: 5px;
+      border-bottom: 2px solid #2b2b2b;
+      cursor: pointer;
+      transition: all .3s;
+    }
+
+    .endgame-modal-content .close-btn:hover { background-color: #474748; border-color: #313131; }
+    .endgame-modal-content .close-btn .icon { height: 10px; }
+
+    .endgame-modal-content button {
+      background: #3eaa42;
+      border: none;
+      border-bottom: 2px solid #157d19;
+      color: #fff;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 12px 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .endgame-modal-content button:hover { background: #44b848; }
+    .endgame-modal-content button:active { background: #157d19; transform: translateY(1px); }
+
+    .endgame-modal-content h2.presque { color: #cd8729; }
+
+    .endgame-modal-content button.chance {
+      background: #cd8729;
+      border-bottom-color: #9f6414;
+    }
+
+    .endgame-modal-content button.chance:hover { background: #da953b; }
+    .endgame-modal-content button.chance:active { background: #9f6414; }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      top: -20px;
+      z-index: 99;
+      animation: fall linear forwards;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(105vh) rotate(720deg); }
+    }
+
+    /* ===== RESPONSIVE (identique au site) ===== */
+    @media (max-height: 900px) {
+      .keyboard { margin-bottom: 7px; }
+    }
+
+    @media (max-height: 700px) {
+      .tile { width: 48px; height: 48px; }
+      .tile .letter { font-size: 28px; }
+      .key { height: 50px; }
+    }
+
+    @media (max-height: 700px), (max-width: 500px) {
+      .key { font-size: 18px; }
+      .key .icon { height: 13px; }
+    }
+
+    @media (max-height: 600px) {
+      .tile { width: 40px; height: 40px; border-radius: 4px; }
+      .tile .letter { font-size: 24px; }
+    }
+
+    @media (max-height: 540px) {
+      header { height: 40px; }
+      .header-left, .header-right { width: 62px; }
+      .icon-btn { width: 28px; height: 28px; }
+      .title .letter { width: 20px; height: 20px; font-size: 12px; margin: 0 2px; }
+      .title .space { width: 10px; }
+      .tile { width: 32px; height: 32px; border-radius: 3px; }
+      .keyboard-line { margin-top: 4px; }
+      .key { height: 48px; }
+    }
+
+    @media (max-width: 500px) {
+      .key { width: 34px; }
+      .key.big { width: 72px; }
+    }
+
+    @media (max-width: 380px) {
+      .tile { width: 54px; height: 54px; }
+    }
+
+    @media (max-width: 393px) {
+      .key { width: 32px; }
+      .key.big { width: 68px; }
+    }
+
+    @media (max-width: 372px) {
+      .key { width: 28px; }
+      .key.big { width: 60px; }
+    }
+
+    @media (max-width: 320px) {
+      .title .letter { width: 20px; height: 20px; font-size: 12px; margin: 0 1px; }
+      .key { width: 22px; }
+      .key.big { width: 48px; }
+      .tile { width: 48px; height: 48px; }
+    }
+
+    @media (max-width: 300px) {
+      .tile { width: 48px; height: 48px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="game">
+  <header>
+    <div class="header-container">
+      <div class="header-left">
+        <div class="icon-btn archives" title="Archives">
+          <svg class="icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#fff" d="M64 164v244a56 56 0 0056 56h272a56 56 0 0056-56V164a4 4 0 00-4-4H68a4 4 0 00-4 4zm267 151.63l-63.69 63.68a16 16 0 01-22.62 0L181 315.63c-6.09-6.09-6.65-16-.85-22.38a16 16 0 0123.16-.56L240 329.37V224.45c0-8.61 6.62-16 15.23-16.43A16 16 0 01272 224v105.37l36.69-36.68a16 16 0 0123.16.56c5.8 6.37 5.24 16.29-.85 22.38z"/>
+            <rect x="32" y="48" width="448" height="80" rx="32" ry="32" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="icon-btn stats" title="Statistiques">
+          <svg class="icon" viewBox="0 0 13.376 13.373" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(0 -0.05)">
+              <g transform="translate(0 5.303)">
+                <path d="M3.344,187.75H.479a.48.48,0,0,0-.479.479v7.164a.478.478,0,0,0,.479.479H3.344a.478.478,0,0,0,.479-.479v-7.164A.478.478,0,0,0,3.344,187.75Z" transform="translate(0 -187.75)" fill="#fff"/>
+              </g>
+              <g transform="translate(4.777 0.05)">
+                <path d="M174.044.05h-2.866a.478.478,0,0,0-.479.476V12.945a.478.478,0,0,0,.479.479h2.866a.478.478,0,0,0,.479-.479V.529A.478.478,0,0,0,174.044.05Z" transform="translate(-170.7 -0.05)" fill="#fff"/>
+              </g>
+              <g transform="translate(9.554 3.87)">
+                <path d="M344.744,136.55h-2.866a.477.477,0,0,0-.479.479v8.6a.478.478,0,0,0,.479.479h2.866a.478.478,0,0,0,.479-.479v-8.6A.478.478,0,0,0,344.744,136.55Z" transform="translate(-341.4 -136.55)" fill="#fff"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="game-title">
+        <div class="title">
+          <div class="letter correct">L</div>
+          <div class="letter incorrect">E</div>
+          <div class="space"></div>
+          <div class="letter partial">M</div>
+          <div class="letter incorrect">O</div>
+          <div class="letter incorrect">T</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="icon-btn settings" title="Paramètres">
+          <svg class="icon" viewBox="0 0 14.124 13.374" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(2 -52.804)">
+              <path d="M14.281,6.529a1.846,1.846,0,0,1-1.455-2.5.866.866,0,0,0-.259-.975,6.944,6.944,0,0,0-2.072-1.2.871.871,0,0,0-.984.273,1.841,1.841,0,0,1-2.9,0,.871.871,0,0,0-.984-.273A6.977,6.977,0,0,0,3.7,2.942a.876.876,0,0,0-.273,1,1.836,1.836,0,0,1-1.53,2.524.871.871,0,0,0-.763.7A6.657,6.657,0,0,0,1,8.488a6.742,6.742,0,0,0,.089,1.106.871.871,0,0,0,.767.73,1.836,1.836,0,0,1,1.5,2.594.857.857,0,0,0,.24,1.026,7,7,0,0,0,2.053,1.182.942.942,0,0,0,.3.052.866.866,0,0,0,.706-.367,1.822,1.822,0,0,1,1.507-.791,1.846,1.846,0,0,1,1.478.744.866.866,0,0,0,1.017.287,7.062,7.062,0,0,0,1.883-1.125.871.871,0,0,0,.254-.993,1.836,1.836,0,0,1,1.474-2.538A.871.871,0,0,0,15,9.679a6.827,6.827,0,0,0,.122-1.191,6.76,6.76,0,0,0-.118-1.258.862.862,0,0,0-.725-.7ZM10.416,8.488A2.354,2.354,0,1,1,8.062,6.134a2.354,2.354,0,0,1,2.354,2.354Z" transform="translate(-3 51)" fill="#fff"/>
+            </g>
+          </svg>
+        </div>
+        <div class="icon-btn help" title="Aide">
+          <svg class="icon" viewBox="0 0 9.454 13.374" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(-142.61 0)">
+              <path d="M396.761,788.2h-.646a.825.825,0,0,0-.825.825v.892a.825.825,0,0,0,.825.825h.646a.825.825,0,0,0,.825-.825v-.892A.824.824,0,0,0,396.761,788.2Z" transform="translate(-249.208 -777.367)" fill="#fff"/>
+              <path d="M143,3.928l1.192.148a.825.825,0,0,0,.873-.526,2.542,2.542,0,0,1,.717-1.062,2.431,2.431,0,0,1,1.62-.55,2.325,2.325,0,0,1,1.6.526,1.633,1.633,0,0,1,.592,1.266,1.575,1.575,0,0,1-.334.973,11.026,11.026,0,0,1-1.329,1.181,5.6,5.6,0,0,0-1.483,1.623,3.756,3.756,0,0,0-.363,1.585.825.825,0,0,0,.825.859h.673A.826.826,0,0,0,148.4,9.2a2.082,2.082,0,0,1,.155-.7,3.872,3.872,0,0,1,1-1.073,10.373,10.373,0,0,0,2.031-2.038,2.918,2.918,0,0,0,.476-1.587,3.455,3.455,0,0,0-1.292-2.658A5.059,5.059,0,0,0,147.295,0a4.882,4.882,0,0,0-3.355,1.127A3.887,3.887,0,0,0,142.618,3.4.444.444,0,0,0,143,3.928Z" fill="#fff"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="toast" class="error"></div>
+    <div id="board" class="grid"></div>
+
+    <div id="keyboard" class="keyboard"></div>
+  </main>
+  <div id="overlay" class="endgame-modal">
+    <div class="endgame-modal-content">
+      <div class="close-btn" onclick="resetGame()" title="Fermer">
+        <svg class="icon" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9.662,1.971,6.632,5l3.03,3.03A1.154,1.154,0,1,1,8.03,9.664L5,6.633l-3.03,3.03A1.154,1.154,0,0,1,.338,8.032L3.368,5,.338,1.971A1.154,1.154,0,0,1,1.969.34L5,3.37,8.03.34A1.154,1.154,0,0,1,9.662,1.971Z" fill="#fff"/>
+        </svg>
+      </div>
+      <h2>🎉 Bravo Maman ! 🎂</h2>
+      <p>60 ans aujourd'hui, et toujours le flair pour dénicher le bon plan !<br>
+      Tu as craqué le code... et il cachait une surprise :<br>
+      <strong>une soirée au RESTO rien que tous les deux ❤️.</strong><br>
+      Joyeux anniversaire, je t'aime fort.</p>
+      <div id="soluce" class="soluce"></div>
+      <button onclick="resetGame()">Rejouer</button>
+    </div>
+  </div>
+
+  <div id="chance-modal" class="endgame-modal">
+    <div class="endgame-modal-content">
+      <h2 class="presque">🌟 Presque !</h2>
+      <p>Le hasard ne décide pas de tout...<br>
+      Ce soir, le destin t'offre <strong>une chance de plus</strong> 🎁</p>
+      <button class="chance" onclick="grantExtraChance()">Une chance de plus</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ANSWER = "RESTO";
+  const BASE_ROWS = 6, COLS = 5;
+  let ROWS = BASE_ROWS;
+
+  let currentRow = 0, currentCol = 0, gameOver = false;
+  let bonusCount = 0;
+  const board = document.getElementById('board');
+  const toast = document.getElementById('toast');
+
+  const KB_ROWS = [
+    ['A','Z','E','R','T','Y','U','I','O','P'],
+    ['Q','S','D','F','G','H','J','K','L','M'],
+    ['Entrer','W','X','C','V','B','N','Suppr']
+  ];
+
+  const ICONS = {
+    Entrer: '<svg class="icon" viewBox="0 0 17.78 12.7" xmlns="http://www.w3.org/2000/svg"><path d="M15.24,53.529H10.16v2.54h5.08v3.81H5.08l1.9-1.9-1.9-1.9L0,61.149l5.08,5.08,1.9-1.9L5.08,62.419H15.24a2.542,2.542,0,0,0,2.54-2.54V56.069A2.543,2.543,0,0,0,15.24,53.529Z" fill="#fff"/></svg>',
+    Suppr: '<svg class="icon" viewBox="0 0 18.15 12.7" xmlns="http://www.w3.org/2000/svg"><path d="M18.331,5H8.353a3.212,3.212,0,0,0-2.188.974L2.48,10.069a1.936,1.936,0,0,0,0,2.562l3.685,4.095a3.212,3.212,0,0,0,2.188.974h9.978a1.816,1.816,0,0,0,1.814-1.814V6.814A1.817,1.817,0,0,0,18.331,5Zm0,10.885H8.353a1.482,1.482,0,0,1-.84-.374L3.828,11.417a.136.136,0,0,1,0-.134L7.514,7.188a1.48,1.48,0,0,1,.839-.374h9.978Z" fill="#fff"/><path d="M11.293,14.624a.985.985,0,0,0,1.393,0l1.273-1.274,1.274,1.274a.986.986,0,1,0,1.394-1.393l-1.274-1.274,1.274-1.274a.985.985,0,1,0-1.393-1.393L13.96,10.563,12.687,9.289a.985.985,0,1,0-1.393,1.393l1.273,1.274-1.274,1.274A.986.986,0,0,0,11.293,14.624Z" transform="translate(-3.135 -5.607)" fill="#fff"/></svg>'
+  };
+
+  const grid = [];
+  const keyEls = {};
+
+  function buildBoard() {
+    for (let r = 0; r < ROWS; r++) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'attempt';
+      grid[r] = [];
+      for (let c = 0; c < COLS; c++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        const letter = document.createElement('div');
+        letter.className = 'letter';
+        tile.appendChild(letter);
+        rowEl.appendChild(tile);
+        grid[r][c] = tile;
+      }
+      board.appendChild(rowEl);
+    }
+  }
+
+  function buildKeyboard() {
+    const kb = document.getElementById('keyboard');
+    KB_ROWS.forEach(rowKeys => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'keyboard-line';
+      rowKeys.forEach(k => {
+        const key = document.createElement('div');
+        key.className = 'key' + (ICONS[k] ? ' big' : '');
+        if (ICONS[k]) key.innerHTML = ICONS[k];
+        else key.textContent = k;
+        key.addEventListener('click', () => handleKey(k));
+        rowEl.appendChild(key);
+        if (k.length === 1) keyEls[k] = key;
+      });
+      kb.appendChild(rowEl);
+    });
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  function handleKey(k) {
+    if (gameOver) return;
+    if (k === 'Entrer') return submit();
+    if (k === 'Suppr') {
+      if (currentCol > 0) {
+        currentCol--;
+        const tile = grid[currentRow][currentCol];
+        tile.querySelector('.letter').textContent = '';
+        tile.classList.remove('has-letter');
+      }
+      return;
+    }
+    if (currentCol < COLS && /^[A-Z]$/.test(k)) {
+      const tile = grid[currentRow][currentCol];
+      tile.querySelector('.letter').textContent = k;
+      tile.classList.add('has-letter', 'pop');
+      setTimeout(() => tile.classList.remove('pop'), 130);
+      currentCol++;
+    }
+  }
+
+  function submit() {
+    const guess = grid[currentRow].map(t => t.querySelector('.letter').textContent).join('');
+    if (guess.length < COLS) {
+      showToast("Pas assez de lettres");
+      const rowEl = grid[currentRow][0].parentElement;
+      rowEl.classList.remove('shake');
+      void rowEl.offsetWidth;
+      rowEl.classList.add('shake');
+      return;
+    }
+
+    const result = evaluate(guess);
+    const rowTiles = grid[currentRow];
+
+    rowTiles.forEach((tile, i) => {
+      setTimeout(() => {
+        tile.classList.add('validated');
+        setTimeout(() => tile.classList.add(result[i]), 250);
+        setTimeout(() => {
+          const k = keyEls[tile.querySelector('.letter').textContent];
+          if (k) {
+            const rank = { incorrect: 0, partial: 1, correct: 2 };
+            if (!k.dataset.rank || rank[result[i]] > +k.dataset.rank) {
+              k.dataset.rank = rank[result[i]];
+              k.classList.remove('incorrect', 'partial', 'correct');
+              k.classList.add(result[i]);
+            }
+          }
+        }, 400);
+      }, i * 300);
+    });
+
+    setTimeout(() => {
+      if (guess === ANSWER) {
+        win();
+      } else if (currentRow === ROWS - 1) {
+        gameOver = true;
+        if (bonusCount === 0) {
+          setTimeout(showChanceModal, 600);
+        } else {
+          setTimeout(autoExtraChance, 600);
+        }
+      } else {
+        currentRow++;
+        currentCol = 0;
+      }
+    }, COLS * 300 + 300);
+  }
+
+  function evaluate(guess) {
+    const result = Array(COLS).fill('incorrect');
+    const counts = {};
+    for (let i = 0; i < COLS; i++) {
+      if (guess[i] === ANSWER[i]) result[i] = 'correct';
+      else counts[ANSWER[i]] = (counts[ANSWER[i]] || 0) + 1;
+    }
+    for (let i = 0; i < COLS; i++) {
+      if (result[i] === 'correct') continue;
+      if (counts[guess[i]] > 0) {
+        result[i] = 'partial';
+        counts[guess[i]]--;
+      }
+    }
+    return result;
+  }
+
+  function win() {
+    gameOver = true;
+    setTimeout(() => {
+      showOverlay();
+      launchConfetti();
+    }, 600);
+  }
+
+  function showChanceModal() {
+    document.getElementById('chance-modal').classList.add('show');
+  }
+
+  function addExtraRow() {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'attempt';
+    grid[ROWS] = [];
+    for (let c = 0; c < COLS; c++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      const letter = document.createElement('div');
+      letter.className = 'letter';
+      tile.appendChild(letter);
+      rowEl.appendChild(tile);
+      grid[ROWS][c] = tile;
+    }
+    board.appendChild(rowEl);
+    ROWS++;
+  }
+
+  function grantExtraChance() {
+    document.getElementById('chance-modal').classList.remove('show');
+    addExtraRow();
+    currentRow = ROWS - 1;
+    currentCol = 0;
+    gameOver = false;
+    bonusCount++;
+    launchConfetti();
+  }
+
+  function autoExtraChance() {
+    showToast('Une chance de plus 🎁');
+    addExtraRow();
+    currentRow = ROWS - 1;
+    currentCol = 0;
+    gameOver = false;
+    bonusCount++;
+    launchConfetti();
+  }
+
+  function showOverlay() {
+    const soluce = document.getElementById('soluce');
+    soluce.innerHTML = '';
+    [...ANSWER].forEach(l => {
+      const tile = document.createElement('div');
+      tile.className = 'tile correct';
+      const letter = document.createElement('div');
+      letter.className = 'letter';
+      letter.textContent = l;
+      tile.appendChild(letter);
+      soluce.appendChild(tile);
+    });
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function launchConfetti() {
+    const colors = ['#3eaa42', '#cd8729', '#e21c46', '#73adff', '#9b59b6', '#f39c12'];
+    for (let i = 0; i < 120; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+      c.style.animationDelay = Math.random() * 2 + 's';
+      if (Math.random() > 0.5) c.style.borderRadius = '50%';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 7000);
+    }
+  }
+
+  function resetGame() {
+    document.getElementById('overlay').classList.remove('show');
+    document.querySelectorAll('.confetti').forEach(c => c.remove());
+    currentRow = 0;
+    currentCol = 0;
+    gameOver = false;
+    bonusCount = 0;
+    grid.flat().forEach(t => {
+      t.className = 'tile';
+      t.querySelector('.letter').textContent = '';
+    });
+    Object.values(keyEls).forEach(k => {
+      delete k.dataset.rank;
+      k.classList.remove('correct', 'partial', 'incorrect');
+    });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (gameOver) return;
+    if (e.key === 'Enter') submit();
+    else if (e.key === 'Backspace') handleKey('Suppr');
+    else if (/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toUpperCase());
+  });
+
+  buildBoard();
+  buildKeyboard();
+</script>
+
+</body>
+</html>
