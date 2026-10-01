@@ -231,6 +231,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      vertical-align: top;
       width: 43px;
       height: 60px;
       cursor: pointer;
@@ -253,7 +254,7 @@
     .key:active { background: #4d4d4d; transform: translateY(1px); }
 
     .key.big { width: 90px; }
-    .key .icon { height: 15px; transform: translateY(1px); }
+    .key .icon { height: 22px; transform: translateY(1px); }
 
     .key.correct { background: #3eaa42; border-color: #157d19; }
     .key.correct:active { background: #157d19; }
@@ -402,7 +403,7 @@
 
     @media (max-height: 700px), (max-width: 500px) {
       .key { font-size: 18px; }
-      .key .icon { height: 13px; }
+      .key .icon { height: 18px; }
     }
 
     @media (max-height: 600px) {
@@ -562,8 +563,8 @@
   ];
 
   const ICONS = {
-    Entrer: '<svg class="icon" viewBox="0 0 17.78 12.7" xmlns="http://www.w3.org/2000/svg"><path d="M15.24,53.529H10.16v2.54h5.08v3.81H5.08l1.9-1.9-1.9-1.9L0,61.149l5.08,5.08,1.9-1.9L5.08,62.419H15.24a2.542,2.542,0,0,0,2.54-2.54V56.069A2.543,2.543,0,0,0,15.24,53.529Z" fill="#fff"/></svg>',
-    Suppr: '<svg class="icon" viewBox="0 0 18.15 12.7" xmlns="http://www.w3.org/2000/svg"><path d="M18.331,5H8.353a3.212,3.212,0,0,0-2.188.974L2.48,10.069a1.936,1.936,0,0,0,0,2.562l3.685,4.095a3.212,3.212,0,0,0,2.188.974h9.978a1.816,1.816,0,0,0,1.814-1.814V6.814A1.817,1.817,0,0,0,18.331,5Zm0,10.885H8.353a1.482,1.482,0,0,1-.84-.374L3.828,11.417a.136.136,0,0,1,0-.134L7.514,7.188a1.48,1.48,0,0,1,.839-.374h9.978Z" fill="#fff"/><path d="M11.293,14.624a.985.985,0,0,0,1.393,0l1.273-1.274,1.274,1.274a.986.986,0,1,0,1.394-1.393l-1.274-1.274,1.274-1.274a.985.985,0,1,0-1.393-1.393L13.96,10.563,12.687,9.289a.985.985,0,1,0-1.393,1.393l1.273,1.274-1.274,1.274A.986.986,0,0,0,11.293,14.624Z" transform="translate(-3.135 -5.607)" fill="#fff"/></svg>'
+    Entrer: '<svg class="icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24"><path d="M359-208 86-480l273-272 88 88-121 121h422v-160h126v286H326l121 121-88 88Z" fill="#fff"/></svg>',
+    Suppr: '<svg class="icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24"><path d="m480-326 81-81 81 81 73-73-81-81 81-81-73-73-81 81-81-81-73 73 81 81-81 81 73 73ZM372-126q-30.28 0-57.37-13.55Q287.53-153.09 270-177L46-480l224-303q17.53-23.91 44.63-37.45Q341.72-834 372-834h416q53 0 89.5 36.5T914-708v456q0 53-36.5 89.5T788-126H372ZM202-480l168 229h419v-458H370L202-480Zm378 0Z" fill="#fff"/></svg>'
   };
 
   const grid = [];
